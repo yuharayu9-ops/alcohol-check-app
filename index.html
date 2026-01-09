@@ -3,114 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>アルコールチェック報告システム</title>
+    <title>アルコールチェック報告</title>
     <style>
-        :root { --primary-color: #0056b3; }
-        body { font-family: "Helvetica Neue", Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 500px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        h2 { text-align: center; color: var(--primary-color); margin-bottom: 25px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        .form-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 8px; font-weight: bold; font-size: 0.9em; }
-        input, select, textarea { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
-        input:focus { border-color: var(--primary-color); outline: none; box-shadow: 0 0 5px rgba(0,86,179,0.2); }
-        button { width: 100%; padding: 15px; background-color: var(--primary-color); color: white; border: none; border-radius: 6px; font-size: 18px; font-weight: bold; cursor: pointer; transition: background 0.3s; }
-        button:hover { background-color: #004494; }
-        button:disabled { background-color: #ccc; cursor: not-allowed; }
-        .note { font-size: 0.8em; color: #666; margin-top: 5px; }
+        body { font-family: "Hiragino Kaku Gothic ProN", sans-serif; background-color: #f0f7ff; margin: 0; padding: 15px; }
+        .container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); }
+        h2 { text-align: center; color: #0077b6; border-bottom: 2px solid #eef; padding-bottom: 10px; }
+        .section-title { font-weight: bold; margin: 20px 0 10px; color: #444; border-left: 6px solid #00b4d8; padding-left: 10px; font-size: 0.95em; }
+        
+        /* ボタン共通スタイル */
+        .btn-group { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-bottom: 10px; }
+        .select-btn { padding: 12px 5px; border: 2px solid #e0e0e0; border-radius: 12px; background: #fff; cursor: pointer; font-size: 14px; transition: 0.2s; text-align: center; color: #555; }
+        .select-btn.active { background: #0077b6; color: white; border-color: #0077b6; font-weight: bold; }
+        .select-btn.danger.active { background: #d90429; border-color: #d90429; }
+
+        input, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 16px; margin-bottom: 10px; background: #fafafa; }
+        .submit-btn { width: 100%; padding: 20px; background: #0077b6; color: white; border: none; border-radius: 50px; font-size: 1.2em; font-weight: bold; cursor: pointer; margin-top: 25px; box-shadow: 0 4px 12px rgba(0,119,182,0.3); }
+        #loading { text-align: center; color: #0077b6; padding: 40px; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>アルコールチェック報告</h2>
-    <form id="checkForm">
-        <div class="form-group">
-            <label>運転者名</label>
-            <input type="text" id="driver_name" placeholder="氏名を入力" required>
+    <h2>🚚 安全運転報告</h2>
+    <div id="loading">設定を読み込み中...</div>
+
+    <div id="form-content" style="display:none;">
+        <div class="section-title">1. 運転者を選択</div>
+        <div id="driver-buttons" class="btn-group"></div>
+
+        <div class="section-title">2. 車両を選択</div>
+        <div id="car-buttons" class="btn-group"></div>
+
+        <div class="section-title">3. 確認方法・検知器</div>
+        <div class="btn-group">
+            <div class="select-btn method-btn active" onclick="select('method', '対面', this)">対面</div>
+            <div class="select-btn method-btn" onclick="select('method', '電話', this)">電話</div>
+            <div class="select-btn method-btn" onclick="select('method', 'その他', this)">その他</div>
+        </div>
+        <div class="btn-group">
+            <div class="select-btn device-btn active" onclick="select('use_device', '使用', this)">検知器使用</div>
+            <div class="select-btn device-btn" onclick="select('use_device', '未使用', this)">未使用</div>
         </div>
 
-        <div class="form-group">
-            <label>車両番号</label>
-            <input type="text" id="car_number" placeholder="ナンバープレート等" required>
+        <div class="section-title">4. 酒気帯びの有無</div>
+        <div class="btn-group">
+            <div class="select-btn alcohol-btn active" onclick="select('has_alcohol', '無', this)">無 (正常)</div>
+            <div class="select-btn alcohol-btn danger" onclick="select('has_alcohol', '有', this)">有 (異常)</div>
         </div>
 
-        <div class="form-group">
-            <label>確認方法</label>
-            <select id="method">
-                <option value="対面">対面</option>
-                <option value="電話（カメラ越し）">電話（カメラ越し）</option>
-                <option value="その他">その他</option>
-            </select>
-        </div>
+        <div class="section-title">5. 備考・確認者</div>
+        <textarea id="instruction" rows="2" placeholder="特記事項（あれば）"></textarea>
+        <input type="text" id="checker_name" placeholder="確認者の名前（上司）">
 
-        <div class="form-group">
-            <label>アルコール検知器の使用</label>
-            <select id="use_device">
-                <option value="使用した">使用した</option>
-                <option value="使用していない">使用していない</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label>酒気帯びの有無</label>
-            <select id="has_alcohol" style="color: red; font-weight: bold;">
-                <option value="無" style="color: black;">無 (異常なし)</option>
-                <option value="有" style="color: red;">有 (異常あり)</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label>指示・備考事項</label>
-            <textarea id="instruction" rows="2" placeholder="特記事項があれば入力"></textarea>
-        </div>
-
-        <div class="form-group">
-            <label>確認者名</label>
-            <input type="text" id="checker_name" placeholder="確認を行った上司名" required>
-        </div>
-
-        <button type="submit" id="submitBtn">報告を送信する</button>
-        <p class="note">※送信時刻は自動的に記録されます。</p>
-    </form>
+        <button class="submit-btn" onclick="submitForm()">報告を送信！</button>
+    </div>
 </div>
 
 <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbwYhSJwDrALT4reekEDOFn7Ab5-WJvfYyId8TuPVIWVrn-NqgNKSEMAiIeTo7clA0Ji0Q/exec"; // ←ここにコピーしたURLを貼り付け！
+    const GAS_URL = "ここにGASのURLを貼る";
+    let formData = { driver_name: "", car_number: "", method: "対面", use_device: "使用", has_alcohol: "無" };
 
-    document.getElementById('checkForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const btn = document.getElementById('submitBtn');
-        btn.disabled = true;
-        btn.innerText = "送信中...";
-
-        const data = {
-            driver_name: document.getElementById('driver_name').value,
-            car_number: document.getElementById('car_number').value,
-            method: document.getElementById('method').value,
-            use_device: document.getElementById('use_device').value,
-            has_alcohol: document.getElementById('has_alcohol').value,
-            instruction: document.getElementById('instruction').value,
-            checker_name: document.getElementById('checker_name').value
-        };
-
+    window.onload = async () => {
         try {
-            await fetch(GAS_URL, {
-                method: "POST",
-                mode: "no-cors",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data)
+            const response = await fetch(GAS_URL);
+            const data = await response.json();
+            
+            // 運転者ボタン生成
+            const driverGroup = document.getElementById('driver-buttons');
+            data.drivers.forEach(name => {
+                const btn = createBtn(name, () => select('driver_name', name, btn));
+                driverGroup.appendChild(btn);
             });
 
-            alert("報告が完了しました。お疲れ様でした！");
-            document.getElementById('checkForm').reset();
-        } catch (error) {
-            alert("通信エラーが発生しました。");
-        } finally {
-            btn.disabled = false;
-            btn.innerText = "報告を送信する";
-        }
-    });
-</script>
+            // 車両ボタン生成
+            const carGroup = document.getElementById('car-buttons');
+            data.cars.forEach(num => {
+                const btn = createBtn(num, () => select('car_number', num, btn));
+                carGroup.appendChild(btn);
+            });
 
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('form-content').style.display = 'block';
+        } catch (e) {
+            document.getElementById('loading').innerText = "データの読み込みに失敗しました。";
+        }
+    };
+
+    function createBtn(text, onClick) {
+        const btn = document.createElement('div');
+        btn.className = 'select-btn';
+        btn.innerText = text;
+        btn.onclick = onClick;
+        return btn;
+    }
+
+    function select(key, value, element) {
+        formData[key] = value;
+        element.parentElement.querySelectorAll('.select-btn').forEach(btn => btn.classList.remove('active'));
+        element.classList.add('active');
+    }
+
+    async function submitForm() {
+        const checker = document.getElementById('checker_name').value;
+        if (!formData.driver_name || !formData.car_number || !checker) return alert("「運転者」「車両」「確認者」は必須です");
+
+        const btn = document.querySelector('.submit-btn');
+        btn.disabled = true; btn.innerText = "送信中...";
+
+        try {
+            const payload = { ...formData, instruction: document.getElementById('instruction').value, checker_name: checker };
+            await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(payload) });
+            alert("送信完了しました！");
+            location.reload(); 
+        } catch (e) { alert("エラー発生"); btn.disabled = false; }
+    }
+</script>
 </body>
 </html>
