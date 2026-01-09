@@ -3,56 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>【法定】アルコールチェック記録フォーム</title>
+    <title>【法定】アルコールチェック入力</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="bg-slate-50 p-4 md:p-8">
+<body class="bg-slate-50 p-4">
     <div class="max-w-lg mx-auto bg-white p-6 rounded-2xl shadow-lg border border-slate-200">
         <h1 class="text-2xl font-bold mb-6 text-slate-800 border-b pb-2">アルコールチェック記録簿</h1>
         
         <form id="checkForm" class="space-y-5">
             <div>
                 <label class="block text-sm font-semibold text-slate-700 mb-1">① 実施日時</label>
-                <input type="datetime-local" id="datetime" name="datetime" class="w-full border-slate-300 border p-3 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required>
+                <input type="datetime-local" id="datetime" name="check_date" class="w-full border-slate-300 border p-3 rounded-lg outline-none" required>
             </div>
 
             <div>
                 <label class="block text-sm font-semibold text-slate-700 mb-1">② 運転者の氏名</label>
-                <input type="text" name="driver" placeholder="氏名を記入" class="w-full border-slate-300 border p-3 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required>
+                <input type="text" name="driver_name" placeholder="氏名を記入" class="w-full border-slate-300 border p-3 rounded-lg outline-none" required>
             </div>
 
             <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-1">③ 自動車の登録番号（ナンバー）</label>
-                <input type="text" name="car_number" placeholder="地名・分類番号・かな・数字" class="w-full border-slate-300 border p-3 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">③ 自動車の登録番号</label>
+                <input type="text" name="vehicle_number" placeholder="ナンバープレート等" class="w-full border-slate-300 border p-3 rounded-lg outline-none" required>
             </div>
 
             <div>
                 <label class="block text-sm font-semibold text-slate-700 mb-1">④ 確認方法</label>
-                <div class="flex gap-4">
-                    <label class="flex items-center gap-1 cursor-pointer">
-                        <input type="radio" name="method" value="対面" checked class="w-4 h-4 text-blue-600"> 対面
-                    </label>
-                    <label class="flex items-center gap-1 cursor-pointer">
-                        <input type="radio" name="method" value="電話・カメラ等" class="w-4 h-4 text-blue-600"> 電話・カメラ等
-                    </label>
-                </div>
+                <select name="method" class="w-full border-slate-300 border p-3 rounded-lg bg-white outline-none">
+                    <option value="対面">対面</option>
+                    <option value="電話・カメラ等">電話・カメラ等</option>
+                </select>
             </div>
 
             <div>
                 <label class="block text-sm font-semibold text-slate-700 mb-1">⑤ アルコール検知器の使用</label>
-                <select name="use_device" class="w-full border-slate-300 border p-3 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                <select name="use_device" class="w-full border-slate-300 border p-3 rounded-lg bg-white outline-none">
                     <option value="あり">あり</option>
-                    <option value="なし">なし（故障等、理由必須）</option>
+                    <option value="なし">なし</option>
                 </select>
             </div>
 
             <div class="p-4 bg-red-50 rounded-lg border border-red-200">
                 <label class="block text-sm font-bold text-red-800 mb-2">⑥ 酒気帯びの有無</label>
                 <div class="flex gap-8">
-                    <label class="flex items-center gap-2 cursor-pointer font-bold text-green-700 text-lg">
+                    <label class="flex items-center gap-2 cursor-pointer font-bold text-green-700">
                         <input type="radio" name="has_alcohol" value="なし" checked class="w-5 h-5"> なし
                     </label>
-                    <label class="flex items-center gap-2 cursor-pointer font-bold text-red-700 text-lg">
+                    <label class="flex items-center gap-2 cursor-pointer font-bold text-red-700">
                         <input type="radio" name="has_alcohol" value="あり" class="w-5 h-5"> あり
                     </label>
                 </div>
@@ -60,30 +57,55 @@
 
             <div>
                 <label class="block text-sm font-semibold text-slate-700 mb-1">⑦ 指示事項・その他</label>
-                <textarea name="instruction" rows="2" placeholder="運行可否、特記事項など" class="w-full border-slate-300 border p-3 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+                <textarea name="instruction" rows="2" class="w-full border-slate-300 border p-3 rounded-lg outline-none"></textarea>
             </div>
 
             <div>
                 <label class="block text-sm font-semibold text-slate-700 mb-1">⑧ 確認者の氏名</label>
-                <input type="text" name="checker" placeholder="安全運転管理者の氏名など" class="w-full border-slate-300 border p-3 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required>
+                <input type="text" name="checker_name" placeholder="確認者の氏名" class="w-full border-slate-300 border p-3 rounded-lg outline-none" required>
             </div>
 
-            <button type="submit" class="w-full bg-slate-800 hover:bg-slate-900 text-white p-4 rounded-xl font-bold text-lg transition shadow-md shadow-slate-200">
+            <button type="submit" id="submitBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-xl font-bold text-lg transition shadow-md">
                 記録を送信する
             </button>
         </form>
     </div>
 
     <script>
-        // ページを開いた時に現在の日時をセットする
+        // --- ここを書き換えてください ---
+        const SUBAPASE_URL = "https://stbmmtzqgqybdeormrrr.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_9fHPhcWegOIBCBZl73W-cw_h2wICXtD";
+        // ------------------------------
+
+        const supabase = supabase.createClient(SUBAPASE_URL, SUPABASE_KEY);
+
+        // 現在時刻のセット
         const now = new Date();
         now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
         document.getElementById('datetime').value = now.toISOString().slice(0, 16);
 
-        document.getElementById('checkForm').onsubmit = function(e) {
+        // 送信処理
+        document.getElementById('checkForm').onsubmit = async function(e) {
             e.preventDefault();
-            // 今後ここにSupabaseへの送信処理を書き込みます
-            alert('【確認】データが入力されました。次にこれをデータベースへ保存する設定を行います。');
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.innerText = "送信中...";
+
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+
+            const { error } = await supabase
+                .from('alcohol_checks')
+                .insert([data]);
+
+            if (error) {
+                alert("エラーが発生しました: " + error.message);
+                btn.disabled = false;
+                btn.innerText = "記録を送信する";
+            } else {
+                alert("送信完了しました！");
+                location.reload(); // 画面をリセット
+            }
         };
     </script>
 </body>
