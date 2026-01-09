@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>アルコールチェック入力</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-4">
+    <div class="max-w-md mx-auto bg-white p-6 rounded-xl shadow-md">
+        <h1 class="text-xl font-bold mb-4 text-center">アルコールチェック記録</h1>
+        <form id="checkForm" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium">運転者名</label>
+                <input type="text" name="driver" class="w-full border p-2 rounded" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium">車両番号</label>
+                <input type="text" name="car" class="w-full border p-2 rounded" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium">確認方法</label>
+                <select name="method" class="w-full border p-2 rounded">
+                    <option>対面</option>
+                    <option>電話</option>
+                    <option>ビデオ通話</option>
+                </select>
+            </div>
+            <div class="flex items-center space-x-2">
+                <input type="checkbox" id="alcohol" name="alcohol" class="w-5 h-5">
+                <label for="alcohol" class="text-red-600 font-bold">酒気帯びあり</label>
+            </div>
+            <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded-lg font-bold">送信する</button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('checkForm').onsubmit = function(e) {
+            e.preventDefault();
+            alert('送信されました（※現在はテストモードです）');
+        };
+    </script>
+</body>
+</html>
