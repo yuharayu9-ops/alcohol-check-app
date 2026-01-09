@@ -81,14 +81,21 @@
             const response = await fetch(GAS_URL);
             const data = await response.json();
             
+            // 運転者・車両・確認者の生成
             const createSection = (list, groupId, key) => {
                 const group = document.getElementById(groupId);
-                list.forEach(item => {
+                list.forEach((item, index) => {
                     const btn = document.createElement('div');
                     btn.className = 'select-btn';
                     btn.innerText = item;
                     btn.onclick = () => select(key, item, btn);
                     group.appendChild(btn);
+
+                    // 【修正ポイント】確認者の1人目（運転管理者）をデフォルトで選択状態にする
+                    if (key === 'checker_name' && index === 0) {
+                        btn.classList.add('active');
+                        formData.checker_name = item;
+                    }
                 });
             };
 
