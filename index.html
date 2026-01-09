@@ -9,7 +9,7 @@
 </head>
 <body class="bg-slate-50 p-4">
     <div class="max-w-lg mx-auto bg-white p-6 rounded-2xl shadow-lg border border-slate-200">
-        <h1 class="text-2xl font-bold mb-6 text-slate-800 border-b pb-2 text-center">アルコールチェック記録簿</h1>
+        <h1 class="text-2xl font-bold mb-6 text-slate-800 border-b pb-2 text-center text-sm md:text-2xl">アルコールチェック記録簿</h1>
         
         <form id="checkForm" class="space-y-5">
             <div>
@@ -19,12 +19,12 @@
 
             <div>
                 <label class="block text-sm font-semibold text-slate-700 mb-1">② 運転者の氏名</label>
-                <input type="text" name="driver_name" placeholder="氏名を記入" class="w-full border-slate-300 border p-3 rounded-lg outline-none" required>
+                <input type="text" id="driver_name" name="driver_name" placeholder="氏名を記入" class="w-full border-slate-300 border p-3 rounded-lg outline-none" required>
             </div>
 
             <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-1">③ 自動車の登録番号</label>
-                <input type="text" name="car_number" placeholder="ナンバープレート等" class="w-full border-slate-300 border p-3 rounded-lg outline-none" required>
+                <label class="block text-sm font-semibold text-slate-700 mb-1 text-red-600 font-bold">③ 車両名・登録番号（ナンバー）</label>
+                <input type="text" id="car_number" name="car_number" placeholder="例：ハイエース（品川500あ1111）" class="w-full border-slate-300 border p-3 rounded-lg outline-none font-bold text-lg" required>
             </div>
 
             <div>
@@ -44,7 +44,7 @@
             </div>
 
             <div class="p-4 bg-red-50 rounded-lg border border-red-200">
-                <label class="block text-sm font-bold text-red-800 mb-2 font-bold">⑥ 酒気帯びの有無</label>
+                <label class="block text-sm font-bold text-red-800 mb-2">⑥ 酒気帯びの有無</label>
                 <div class="flex gap-8">
                     <label class="flex items-center gap-2 cursor-pointer font-bold text-green-700">
                         <input type="radio" name="has_alcohol" value="なし" checked class="w-5 h-5"> なし
@@ -62,30 +62,36 @@
 
             <div>
                 <label class="block text-sm font-semibold text-slate-700 mb-1">⑧ 確認者の氏名</label>
-                <input type="text" name="checker_name" placeholder="確認者の氏名" class="w-full border-slate-300 border p-3 rounded-lg outline-none" required>
+                <input type="text" id="checker_name" name="checker_name" placeholder="確認者の氏名" class="w-full border-slate-300 border p-3 rounded-lg outline-none" required>
             </div>
 
-            <button type="submit" id="submitBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-xl font-bold text-lg transition shadow-md">
+            <button type="submit" id="submitBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-xl font-bold text-lg transition shadow-md shadow-blue-200">
                 記録を送信する
             </button>
         </form>
     </div>
 
     <script>
-        // --- ここをあなたの情報に書き換えてください ---
-        const SB_URL = "https://stbmmtzqgqybdeormrrr.supabase.co";
-        const SB_KEY = "sb_publishable_9fHPhcWegOIBCBZl73W-cw_h2wICXtD";
-        // ------------------------------------------
+        // --- 設定（あなたのURLとKeyを入れてください） ---
+        const SB_URL = "あなたのProject URL";
+        const SB_KEY = "あなたのAPI Key";
 
-        // 修正ポイント：ライブラリの呼び出し方を修正しました
         const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 
-        // 現在時刻のセット
-        const now = new Date();
-        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-        document.getElementById('datetime').value = now.toISOString().slice(0, 16);
+        window.onload = function() {
+            // 保存データを読み込む
+            if(localStorage.getItem('driver_name')) document.getElementById('driver_name').value = localStorage.getItem('driver_name');
+            if(localStorage.getItem('car_number')) document.getElementById('car_number').value = localStorage.getItem('car_number');
+            if(localStorage.getItem('checker_name')) document.getElementById('checker_name').value = localStorage.getItem('checker_name');
+            updateTime();
+        };
 
-        // 送信処理
+        function updateTime() {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('datetime').value = now.toISOString().slice(0, 16);
+        }
+
         document.getElementById('checkForm').onsubmit = async function(e) {
             e.preventDefault();
             const btn = document.getElementById('submitBtn');
@@ -95,19 +101,24 @@
             const formData = new FormData(e.target);
             const data = Object.fromEntries(formData.entries());
 
-            // 修正ポイント：テーブル名と列名を確実に合わせました
+            // 入力内容を保存
+            localStorage.setItem('driver_name', data.driver_name);
+            localStorage.setItem('car_number', data.car_number);
+            localStorage.setItem('checker_name', data.checker_name);
+
             const { error } = await supabaseClient
                 .from('alcohol_checks')
                 .insert([data]);
 
             if (error) {
                 alert("送信失敗: " + error.message);
-                console.error(error);
                 btn.disabled = false;
                 btn.innerText = "記録を送信する";
             } else {
                 alert("【送信完了】データが保存されました！");
-                location.reload(); 
+                updateTime();
+                btn.disabled = false;
+                btn.innerText = "記録を送信する";
             }
         };
     </script>
