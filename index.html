@@ -5,54 +5,82 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>アルコールチェック報告</title>
     <style>
-        body { font-family: "Hiragino Kaku Gothic ProN", sans-serif; background-color: #f0f7ff; margin: 0; padding: 15px; }
-        .container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); }
-        h2 { text-align: center; color: #0077b6; border-bottom: 2px solid #eef; padding-bottom: 10px; }
-        .section-title { font-weight: bold; margin: 20px 0 10px; color: #444; border-left: 6px solid #00b4d8; padding-left: 10px; font-size: 0.95em; }
+        body { font-family: "Hiragino Kaku Gothic ProN", sans-serif; background-color: #eef9ff; margin: 0; padding: 10px; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #0077b6; font-size: 1.6em; margin-bottom: 20px; border-bottom: 3px solid #caf0f8; padding-bottom: 10px; }
+        .section-title { font-weight: bold; margin: 25px 0 12px; color: #023e8a; border-left: 8px solid #00b4d8; padding-left: 12px; font-size: 1.1em; }
         
-        /* ボタン共通スタイル */
-        .btn-group { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-bottom: 10px; }
-        .select-btn { padding: 12px 5px; border: 2px solid #e0e0e0; border-radius: 12px; background: #fff; cursor: pointer; font-size: 14px; transition: 0.2s; text-align: center; color: #555; }
-        .select-btn.active { background: #0077b6; color: white; border-color: #0077b6; font-weight: bold; }
-        .select-btn.danger.active { background: #d90429; border-color: #d90429; }
+        /* ボタン：1行に2つ並ぶデカボタン設定 */
+        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px; }
+        .select-btn { 
+            padding: 20px 10px; 
+            border: 3px solid #e0e0e0; 
+            border-radius: 15px; 
+            background: #fff; 
+            cursor: pointer; 
+            font-size: 1.2em; /* 文字を大きく */
+            font-weight: bold;
+            transition: 0.2s; 
+            text-align: center; 
+            color: #444;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 0 #ddd;
+        }
+        .select-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #ddd; }
+        .select-btn.active { background: #0077b6; color: white; border-color: #023e8a; box-shadow: 0 4px 0 #005f8b; }
+        
+        /* 酒気帯び：有 の時だけ赤く目立たせる */
+        .select-btn.danger.active { background: #d90429; border-color: #a4133c; box-shadow: 0 4px 0 #800e13; }
 
-        input, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 16px; margin-bottom: 10px; background: #fafafa; }
-        .submit-btn { width: 100%; padding: 20px; background: #0077b6; color: white; border: none; border-radius: 50px; font-size: 1.2em; font-weight: bold; cursor: pointer; margin-top: 25px; box-shadow: 0 4px 12px rgba(0,119,182,0.3); }
-        #loading { text-align: center; color: #0077b6; padding: 40px; font-weight: bold; }
+        /* 入力欄 */
+        textarea, input[type="text"] { 
+            width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 12px; 
+            box-sizing: border-box; font-size: 16px; background: #fafafa; margin-top: 5px;
+        }
+
+        .submit-btn { 
+            width: 100%; padding: 22px; background: #00b4d8; color: white; border: none; 
+            border-radius: 60px; font-size: 1.5em; font-weight: bold; cursor: pointer; 
+            margin-top: 30px; box-shadow: 0 6px 0 #0077b6; transition: 0.1s;
+        }
+        .submit-btn:active { transform: translateY(3px); box-shadow: 0 3px 0 #0077b6; }
+        
+        #loading { text-align: center; color: #0077b6; padding: 50px; font-size: 1.2em; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h2>🚚 安全運転報告</h2>
-    <div id="loading">設定を読み込み中...</div>
+    <div id="loading">名簿を読み込み中...</div>
 
     <div id="form-content" style="display:none;">
-        <div class="section-title">1. 運転者を選択</div>
+        <div class="section-title">👤 運転者を選んでください</div>
         <div id="driver-buttons" class="btn-group"></div>
 
-        <div class="section-title">2. 車両を選択</div>
+        <div class="section-title">🚗 車両を選んでください</div>
         <div id="car-buttons" class="btn-group"></div>
 
-        <div class="section-title">3. 確認方法・検知器</div>
+        <div class="section-title">📱 確認方法・検知器</div>
         <div class="btn-group">
             <div class="select-btn method-btn active" onclick="select('method', '対面', this)">対面</div>
             <div class="select-btn method-btn" onclick="select('method', '電話', this)">電話</div>
-            <div class="select-btn method-btn" onclick="select('method', 'その他', this)">その他</div>
         </div>
         <div class="btn-group">
-            <div class="select-btn device-btn active" onclick="select('use_device', '使用', this)">検知器使用</div>
+            <div class="select-btn device-btn active" onclick="select('use_device', '使用', this)">検知器：使用</div>
             <div class="select-btn device-btn" onclick="select('use_device', '未使用', this)">未使用</div>
         </div>
 
-        <div class="section-title">4. 酒気帯びの有無</div>
+        <div class="section-title">🍷 酒気帯びの有無</div>
         <div class="btn-group">
             <div class="select-btn alcohol-btn active" onclick="select('has_alcohol', '無', this)">無 (正常)</div>
-            <div class="select-btn alcohol-btn danger" onclick="select('has_alcohol', '有', this)">有 (異常)</div>
+            <div class="select-btn alcohol-btn danger" onclick="select('has_alcohol', '有', this)">有 (異常あり)</div>
         </div>
 
-        <div class="section-title">5. 備考・確認者</div>
-        <textarea id="instruction" rows="2" placeholder="特記事項（あれば）"></textarea>
+        <div class="section-title">📝 備考・確認者</div>
+        <textarea id="instruction" rows="2" placeholder="特記があれば記入"></textarea>
         <input type="text" id="checker_name" placeholder="確認者の名前（上司）">
 
         <button class="submit-btn" onclick="submitForm()">報告を送信！</button>
@@ -68,14 +96,12 @@
             const response = await fetch(GAS_URL);
             const data = await response.json();
             
-            // 運転者ボタン生成
             const driverGroup = document.getElementById('driver-buttons');
             data.drivers.forEach(name => {
                 const btn = createBtn(name, () => select('driver_name', name, btn));
                 driverGroup.appendChild(btn);
             });
 
-            // 車両ボタン生成
             const carGroup = document.getElementById('car-buttons');
             data.cars.forEach(num => {
                 const btn = createBtn(num, () => select('car_number', num, btn));
@@ -85,7 +111,7 @@
             document.getElementById('loading').style.display = 'none';
             document.getElementById('form-content').style.display = 'block';
         } catch (e) {
-            document.getElementById('loading').innerText = "データの読み込みに失敗しました。";
+            document.getElementById('loading').innerText = "エラー：名簿を読み込めません";
         }
     };
 
@@ -105,7 +131,7 @@
 
     async function submitForm() {
         const checker = document.getElementById('checker_name').value;
-        if (!formData.driver_name || !formData.car_number || !checker) return alert("「運転者」「車両」「確認者」は必須です");
+        if (!formData.driver_name || !formData.car_number || !checker) return alert("「運転者」「車両」「確認者」は必須です！");
 
         const btn = document.querySelector('.submit-btn');
         btn.disabled = true; btn.innerText = "送信中...";
@@ -113,9 +139,9 @@
         try {
             const payload = { ...formData, instruction: document.getElementById('instruction').value, checker_name: checker };
             await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(payload) });
-            alert("送信完了しました！");
+            alert("報告が完了しました。お疲れ様でした！");
             location.reload(); 
-        } catch (e) { alert("エラー発生"); btn.disabled = false; }
+        } catch (e) { alert("送信エラー"); btn.disabled = false; }
     }
 </script>
 </body>
