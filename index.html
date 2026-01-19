@@ -1,91 +1,77 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>アルコールチェック報告</title>
     <style>
         body { font-family: sans-serif; background-color: #eef9ff; margin: 0; padding: 10px; }
         .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
         h2 { text-align: center; color: #0077b6; border-bottom: 3px solid #caf0f8; padding-bottom: 10px; }
         .section-title { font-weight: bold; margin: 20px 0 10px; color: #023e8a; border-left: 8px solid #00b4d8; padding-left: 12px; }
-        .btn-group { display: grid; gap: 8px; margin-bottom: 10px; }
-        .grid-2 { grid-template-columns: 1fr 1fr; }
-        .grid-1 { grid-template-columns: 1fr; }
-        .select-btn { padding: 18px 10px; border: 3px solid #e0e0e0; border-radius: 15px; background: #fff; cursor: pointer; font-size: 1.1em; font-weight: bold; text-align: center; color: #444; box-shadow: 0 4px 0 #ddd; }
-        .select-btn.active { background: #0077b6; color: white; border-color: #023e8a; box-shadow: 0 4px 0 #005f8b; }
-        .select-btn.danger.active { background: #d90429; border-color: #a4133c; box-shadow: 0 4px 0 #800e13; }
-        .select-btn.type-btn.active { background: #ff9f1c; border-color: #f3722c; box-shadow: 0 4px 0 #e67e22; }
-        textarea { width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 12px; box-sizing: border-box; font-size: 16px; }
-        .submit-btn { width: 100%; padding: 22px; background: #023e8a; color: white; border: none; border-radius: 60px; font-size: 1.5em; font-weight: bold; cursor: pointer; margin-top: 30px; box-shadow: 0 6px 0 #001a33; }
-        #loading { text-align: center; padding: 50px; font-weight: bold; }
+        .btn-group { display: grid; gap: 8px; margin-bottom: 10px; grid-template-columns: 1fr 1fr; }
+        .select-btn { padding: 18px 10px; border: 3px solid #e0e0e0; border-radius: 15px; background: #fff; cursor: pointer; font-size: 1.1em; font-weight: bold; text-align: center; color: #444; }
+        .select-btn.active { background: #0077b6; color: white; border-color: #023e8a; }
+        .select-btn.danger.active { background: #d90429; color: white; }
+        .submit-btn { width: 100%; padding: 22px; background: #023e8a; color: white; border: none; border-radius: 60px; font-size: 1.5em; font-weight: bold; margin-top: 30px; }
         #alcohol-alert { display:none; color:white; background:#d90429; text-align:center; padding:15px; border-radius:10px; margin-top:10px; font-weight:bold; }
     </style>
 </head>
 <body>
 <div class="container">
     <h2>🚚 アルコールチェック報告</h2>
-    <div id="loading">読み込み中...</div>
-    <div id="form-content" style="display:none;">
+    <div id="form-content">
         <div class="section-title">⏰ 朝・夕の選択</div>
-        <div class="btn-group grid-2">
-            <div class="select-btn type-btn active" onclick="select('check_type', '乗務前(朝)', this)">乗務前 (朝)</div>
-            <div class="select-btn type-btn" onclick="select('check_type', '乗務後(夕)', this)">乗務後 (夕)</div>
+        <div class="btn-group">
+            <div class="select-btn active" onclick="sel('check_type','乗務前(朝)',this)">朝</div>
+            <div class="select-btn" onclick="sel('check_type','乗務後(夕)',this)">夕</div>
         </div>
-        <div class="section-title">👤 運転者</div><div id="driver-buttons" class="btn-group grid-2"></div>
-        <div class="section-title">🚗 車両（未定なら次へ）</div><div id="car-buttons" class="btn-group grid-1"></div>
-        <div class="section-title">📱 確認・検知器</div>
-        <div class="btn-group grid-2">
-            <div class="select-btn method-btn active" onclick="select('method', '対面', this)">対面</div>
-            <div class="select-btn method-btn" onclick="select('method', '電話', this)">電話</div>
-        </div>
-        <div class="btn-group grid-2">
-            <div class="select-btn device-btn active" onclick="select('use_device', '使用', this)">検知器：使用</div>
-            <div class="select-btn device-btn" onclick="select('use_device', '未使用', this)">未使用</div>
-        </div>
+        <div class="section-title">👤 運転者</div><div id="driver-buttons" class="btn-group"></div>
+        <div class="section-title">🚗 車両（未定なら次へ）</div><div id="car-buttons" class="btn-group" style="grid-template-columns: 1fr;"></div>
         <div class="section-title">🍷 酒気帯び</div>
-        <div class="btn-group grid-2">
-            <div class="select-btn alcohol-btn active" onclick="selectAlcohol('無', this)">無 (正常)</div>
-            <div class="select-btn alcohol-btn danger" onclick="selectAlcohol('有', this)">有 (異常)</div>
+        <div class="btn-group">
+            <div class="select-btn active" onclick="selAlc('無',this)">無</div>
+            <div class="select-btn danger" onclick="selAlc('有',this)">有</div>
         </div>
-        <div id="alcohol-alert">⚠️ 酒気帯び「有」です！運行管理者に連絡してください。</div>
-        <div class="section-title">👮 確認者</div><div id="checker-buttons" class="btn-group grid-2"></div>
-        <div class="section-title">📝 備考</div><textarea id="instruction" rows="2"></textarea>
+        <div id="alcohol-alert">⚠️ 酒気帯び「有」です！管理者に連絡してください。</div>
+        <div class="section-title">👮 確認者</div><div id="checker-buttons" class="btn-group"></div>
         <button class="submit-btn" onclick="submitForm()">報告を送信！</button>
     </div>
 </div>
 <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbxi8Xf77Iy5XvRJFl6vjh9uxhP-ZBIszW162EuA4EnFK5Ei3fYYTE6-HuV8GUlqE8ocjw/exec";
-    let formData = { check_type: "乗務前(朝)", driver_name: "", car_number: "未定", method: "対面", use_device: "使用", has_alcohol: "無", checker_name: "" };
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbz5JeYtgD7gZ0Ci9D9jNhVWmQGz7xrADb6EQiSunFQyKuHHaBq1DMHzM81_2VESSv01hQ/exec";
+    let formData = { check_type: "乗務前(朝)", driver_name: "", car_number: "未定", has_alcohol: "無", checker_name: "", method: "対面", use_device: "使用" };
+    
     window.onload = async () => {
-        try {
-            const res = await fetch(GAS_URL); const data = await res.json();
-            const createSection = (list, gid, key) => {
-                const g = document.getElementById(gid);
-                list.forEach((item, i) => {
-                    const b = document.createElement('div'); b.className = 'select-btn'; b.innerText = item;
-                    b.onclick = () => select(key, item, b); g.appendChild(b);
-                    if (key === 'checker_name' && i === 0) { b.classList.add('active'); formData.checker_name = item; }
-                });
-            };
-            createSection(data.drivers, 'driver-buttons', 'driver_name');
-            createSection(data.cars, 'car-buttons', 'car_number');
-            createSection(data.checkers, 'checker-buttons', 'checker_name');
-            document.getElementById('loading').style.display = 'none'; document.getElementById('form-content').style.display = 'block';
-        } catch (e) { document.getElementById('loading').innerText = "読み込み失敗"; }
+        const res = await fetch(GAS_URL); const d = await res.json();
+        const create = (list, gid, key) => {
+            const g = document.getElementById(gid);
+            list.forEach((item, i) => {
+                const b = document.createElement('div'); b.className = 'select-btn'; b.innerText = item;
+                b.onclick = () => sel(key, item, b); g.appendChild(b);
+                if (key === 'checker_name' && i === 0) { b.classList.add('active'); formData.checker_name = item; }
+            });
+        };
+        create(d.drivers, 'driver-buttons', 'driver_name');
+        create(d.cars, 'car-buttons', 'car_number');
+        create(d.checkers, 'checker-buttons', 'checker_name');
     };
-    function select(k, v, e) { formData[k] = v; e.parentElement.querySelectorAll('.select-btn').forEach(b => b.classList.remove('active')); e.classList.add('active'); }
-    function selectAlcohol(v, e) {
-        formData.has_alcohol = v; select('has_alcohol', v, e);
+
+    function sel(k, v, e) {
+        formData[k] = v;
+        e.parentElement.querySelectorAll('.select-btn').forEach(b => b.classList.remove('active'));
+        e.classList.add('active');
+    }
+
+    function selAlc(v, e) {
+        formData.has_alcohol = v; sel('has_alcohol', v, e);
         document.getElementById('alcohol-alert').style.display = (v === '有') ? 'block' : 'none';
     }
+
     async function submitForm() {
-        if (!formData.driver_name || !formData.checker_name) return alert("氏名を選択してください");
+        if (!formData.driver_name) return alert("運転者を選んでください");
         const b = document.querySelector('.submit-btn'); b.disabled = true; b.innerText = "送信中...";
-        try {
-            await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({...formData, instruction: document.getElementById('instruction').value}) });
-            alert("報告完了！"); location.reload();
-        } catch (e) { alert("エラー"); b.disabled = false; }
+        await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(formData) });
+        alert("報告完了！"); location.reload();
     }
 </script>
 </body>
