@@ -17,21 +17,17 @@
 </head>
 <body>
 <div class="container">
-    <h2>🚚 アルコールチェック報告</h2>
-    <div class="section-title">⏰ 朝・夕の選択</div>
+    <h2>🚚 点呼報告</h2>
+    <div class="section-title">⏰ 朝・夕</div>
     <div class="btn-group">
-        <div class="select-btn active" onclick="sel('check_type','乗務前(朝)',this)">朝</div>
-        <div class="select-btn" onclick="sel('check_type','乗務後(夕)',this)">夕</div>
+        <div class="select-btn active" onclick="sel('check_type','朝',this)">朝</div>
+        <div class="select-btn" onclick="sel('check_type','夕',this)">夕</div>
     </div>
-    <div class="section-title">👤 運転者</div><div id="driver-buttons" class="btn-group"></div>
+    <div class="section-title">👤 名前</div><div id="driver-buttons" class="btn-group"></div>
     <div class="section-title">🚗 車両（未選択なら未定）</div><div id="car-buttons" class="btn-group" style="grid-template-columns: 1fr;"></div>
-    <div class="section-title">📱 確認方法・検知器</div>
+    <div class="section-title">📱 検知器</div>
     <div class="btn-group">
-        <div class="select-btn active" onclick="sel('method','対面',this)">対面</div>
-        <div class="select-btn" onclick="sel('method','電話',this)">電話</div>
-    </div>
-    <div class="btn-group">
-        <div class="select-btn active" onclick="sel('use_device','使用',this)">検知器：使用</div>
+        <div class="select-btn active" onclick="sel('use_device','使用',this)">使用</div>
         <div class="select-btn" onclick="sel('use_device','未使用',this)">未使用</div>
     </div>
     <div class="section-title">🍷 酒気帯び</div>
@@ -41,33 +37,31 @@
     </div>
     <div class="section-title">👮 確認者</div><div id="checker-buttons" class="btn-group"></div>
     <div class="section-title">📝 備考</div>
-    <textarea id="instruction" rows="3" placeholder="特記事項があれば記入"></textarea>
+    <textarea id="instruction" rows="3" placeholder="備考があれば記入"></textarea>
     <button class="submit-btn" onclick="sub()">報告を送信！</button>
 </div>
 <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbyw8EqV_ZJ9Z812lPaIQP7a6iwbGkEp6FuFcct-0s8pmjwy3WcLoyMHfZ-0jQT-FcRg1g/exec";
-    let formData = { check_type:"乗務前(朝)", driver_name:"", car_number:"未定", method:"対面", use_device:"使用", has_alcohol:"無", checker_name:"" };
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbxFY0EO8EYskrjylMr3m4xofJ2UVZO6k-U_XihN1-AZFXtWoQ0l0TGuCTGn-gIoCVs_3Q/exec";
+    let formData = { check_type:"朝", driver_name:"", car_number:"未定", method:"対面", use_device:"使用", has_alcohol:"無", checker_name:"" };
     window.onload = async () => {
-        try {
-            const res = await fetch(GAS_URL); const d = await res.json();
-            const create = (list, gid, key) => {
-                const g = document.getElementById(gid);
-                list.forEach((v, i) => {
-                    const b = document.createElement('div'); b.className = 'select-btn'; b.innerText = v;
-                    b.onclick = () => sel(key, v, b); g.appendChild(b);
-                    if (key === 'checker_name' && i === 0) { b.classList.add('active'); formData.checker_name = v; }
-                });
-            };
-            create(d.drivers, 'driver-buttons', 'driver_name'); create(d.cars, 'car-buttons', 'car_number'); create(d.checkers, 'checker-buttons', 'checker_name');
-        } catch (e) { alert("読み込み失敗"); }
+        const res = await fetch(GAS_URL); const d = await res.json();
+        const create = (list, gid, key) => {
+            const g = document.getElementById(gid);
+            list.forEach((v, i) => {
+                const b = document.createElement('div'); b.className = 'select-btn'; b.innerText = v;
+                b.onclick = () => sel(key, v, b); g.appendChild(b);
+                if (key === 'checker_name' && i === 0) { b.classList.add('active'); formData.checker_name = v; }
+            });
+        };
+        create(d.drivers, 'driver-buttons', 'driver_name'); create(d.cars, 'car-buttons', 'car_number'); create(d.checkers, 'checker-buttons', 'checker_name');
     };
     function sel(k, v, e) { formData[k] = v; e.parentElement.querySelectorAll('.select-btn').forEach(b => b.classList.remove('active')); e.classList.add('active'); }
     async function sub() {
-        if (!formData.driver_name) return alert("運転者を選んでください");
+        if (!formData.driver_name) return alert("名前を選んでください");
         const b = document.querySelector('.submit-btn'); b.disabled = true; b.innerText = "送信中...";
         formData.instruction = document.getElementById('instruction').value;
         await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(formData) });
-        alert("報告完了！"); location.reload();
+        alert("送信完了！"); location.reload();
     }
 </script>
 </body>
