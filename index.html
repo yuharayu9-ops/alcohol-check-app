@@ -12,6 +12,7 @@
         .select-btn { padding: 18px 10px; border: 3px solid #e0e0e0; border-radius: 15px; background: #fff; cursor: pointer; font-size: 1.1em; font-weight: bold; text-align: center; color: #444; }
         .select-btn.active { background: #0077b6; color: white; border-color: #023e8a; }
         .select-btn.danger.active { background: #d90429; color: white; }
+        textarea { width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 12px; box-sizing: border-box; font-size: 16px; margin-top: 5px; }
         .submit-btn { width: 100%; padding: 22px; background: #023e8a; color: white; border: none; border-radius: 60px; font-size: 1.5em; font-weight: bold; margin-top: 30px; }
         #alcohol-alert { display:none; color:white; background:#d90429; text-align:center; padding:15px; border-radius:10px; margin-top:10px; font-weight:bold; }
     </style>
@@ -19,26 +20,26 @@
 <body>
 <div class="container">
     <h2>🚚 アルコールチェック報告</h2>
-    <div id="form-content">
-        <div class="section-title">⏰ 朝・夕の選択</div>
-        <div class="btn-group">
-            <div class="select-btn active" onclick="sel('check_type','乗務前(朝)',this)">朝</div>
-            <div class="select-btn" onclick="sel('check_type','乗務後(夕)',this)">夕</div>
-        </div>
-        <div class="section-title">👤 運転者</div><div id="driver-buttons" class="btn-group"></div>
-        <div class="section-title">🚗 車両（未定なら次へ）</div><div id="car-buttons" class="btn-group" style="grid-template-columns: 1fr;"></div>
-        <div class="section-title">🍷 酒気帯び</div>
-        <div class="btn-group">
-            <div class="select-btn active" onclick="selAlc('無',this)">無</div>
-            <div class="select-btn danger" onclick="selAlc('有',this)">有</div>
-        </div>
-        <div id="alcohol-alert">⚠️ 酒気帯び「有」です！管理者に連絡してください。</div>
-        <div class="section-title">👮 確認者</div><div id="checker-buttons" class="btn-group"></div>
-        <button class="submit-btn" onclick="submitForm()">報告を送信！</button>
+    <div class="section-title">⏰ 朝・夕</div>
+    <div class="btn-group">
+        <div class="select-btn active" onclick="sel('check_type','乗務前(朝)',this)">朝</div>
+        <div class="select-btn" onclick="sel('check_type','乗務後(夕)',this)">夕</div>
     </div>
+    <div class="section-title">👤 運転者</div><div id="driver-buttons" class="btn-group"></div>
+    <div class="section-title">🚗 車両</div><div id="car-buttons" class="btn-group" style="grid-template-columns: 1fr;"></div>
+    <div class="section-title">🍷 酒気帯び</div>
+    <div class="btn-group">
+        <div class="select-btn active" onclick="selAlc('無',this)">無</div>
+        <div class="select-btn danger" onclick="selAlc('有',this)">有</div>
+    </div>
+    <div id="alcohol-alert">🚨 酒気帯び「有」です！至急連絡してください！</div>
+    <div class="section-title">👮 確認者</div><div id="checker-buttons" class="btn-group"></div>
+    <div class="section-title">📝 備考</div>
+    <textarea id="instruction" rows="3" placeholder="車両未定の理由など"></textarea>
+    <button class="submit-btn" onclick="submitForm()">報告を送信！</button>
 </div>
 <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbz5JeYtgD7gZ0Ci9D9jNhVWmQGz7xrADb6EQiSunFQyKuHHaBq1DMHzM81_2VESSv01hQ/exec";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbznhY-7IXVSqQKg7vlurtIDUmsnJI6JoDarxkf64t3aoMpnrm7I9Y8Em5RoT6O3RLS4JQ/exec";
     let formData = { check_type: "乗務前(朝)", driver_name: "", car_number: "未定", has_alcohol: "無", checker_name: "", method: "対面", use_device: "使用" };
     
     window.onload = async () => {
@@ -70,6 +71,7 @@
     async function submitForm() {
         if (!formData.driver_name) return alert("運転者を選んでください");
         const b = document.querySelector('.submit-btn'); b.disabled = true; b.innerText = "送信中...";
+        formData.instruction = document.getElementById('instruction').value;
         await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(formData) });
         alert("報告完了！"); location.reload();
     }
