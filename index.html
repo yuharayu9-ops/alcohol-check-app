@@ -43,7 +43,7 @@
         <div class="section-title">👤 運転者</div>
         <div id="driver-buttons" class="btn-group grid-2"></div>
 
-        <div class="section-title">🚗 車両</div>
+        <div class="section-title">🚗 車両（車種・番号）</div>
         <div id="car-buttons" class="btn-group grid-1"></div>
 
         <div class="section-title">📱 確認・検知器</div>
@@ -51,6 +51,7 @@
             <div class="select-btn method-btn active" onclick="select('method', '対面', this)">対面</div>
             <div class="select-btn method-btn" onclick="select('method', '電話', this)">電話</div>
         </div>
+        <div style="height:5px;"></div>
         <div class="btn-group grid-2">
             <div class="select-btn device-btn active" onclick="select('use_device', '使用', this)">検知器：使用</div>
             <div class="select-btn device-btn" onclick="select('use_device', '未使用', this)">未使用</div>
@@ -66,14 +67,14 @@
         <div id="checker-buttons" class="btn-group grid-2"></div>
 
         <div class="section-title">📝 備考（あれば）</div>
-        <textarea id="instruction" rows="2" placeholder="例：健康状態良好、指示事項なし等"></textarea>
+        <textarea id="instruction" rows="2" placeholder="特記があれば記入"></textarea>
 
         <button class="submit-btn" onclick="submitForm()">報告を送信！</button>
     </div>
 </div>
 
 <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbwY0XEVPFNlLKaaX-5_jbv2iKRfkeFeq8qqbN4KmkZnUSK4pLcpFgP_0cIW59RCyb10YQ/exec";
+    const GAS_URL = "ここに最新のデプロイURLを貼る";
     let formData = { check_type: "乗務前(朝)", driver_name: "", car_number: "", method: "対面", use_device: "使用", has_alcohol: "無", checker_name: "" };
 
     window.onload = async () => {
@@ -81,7 +82,6 @@
             const response = await fetch(GAS_URL);
             const data = await response.json();
             
-            // 運転者・車両・確認者の生成
             const createSection = (list, groupId, key) => {
                 const group = document.getElementById(groupId);
                 list.forEach((item, index) => {
@@ -91,7 +91,7 @@
                     btn.onclick = () => select(key, item, btn);
                     group.appendChild(btn);
 
-                    // 【修正ポイント】確認者の1人目（運転管理者）をデフォルトで選択状態にする
+                    // 確認者の1人目を自動選択
                     if (key === 'checker_name' && index === 0) {
                         btn.classList.add('active');
                         formData.checker_name = item;
@@ -115,15 +115,14 @@
     }
 
     async function submitForm() {
-        if (!formData.driver_name || !formData.car_number || !formData.checker_name) return alert("「運転者」「車両」「確認者」を選んでください！");
+        if (!formData.driver_name || !formData.car_number || !formData.checker_name) return alert("必須項目を選んでください");
         const btn = document.querySelector('.submit-btn');
         btn.disabled = true; btn.innerText = "送信中...";
         try {
-            const payload = { ...formData, instruction: document.getElementById('instruction').value };
-            await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(payload) });
+            await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({...formData, instruction: document.getElementById('instruction').value}) });
             alert("報告完了！");
             location.reload(); 
-        } catch (e) { alert("エラー"); btn.disabled = false; }
+        } catch (e) { alert("送信エラー"); btn.disabled = false; }
     }
 </script>
 </body>
