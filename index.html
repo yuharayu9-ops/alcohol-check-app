@@ -11,6 +11,8 @@
         .btn-group { display: grid; gap: 8px; margin-bottom: 10px; grid-template-columns: 1fr 1fr; }
         .select-btn { padding: 18px 10px; border: 3px solid #e0e0e0; border-radius: 15px; background: #fff; cursor: pointer; font-size: 1.1em; font-weight: bold; text-align: center; color: #444; }
         .select-btn.active { background: #0077b6; color: white; border-color: #023e8a; }
+        /* 警告文のデザイン */
+        #alcohol-alert { display: none; background-color: #ff0000; color: white; padding: 15px; border-radius: 12px; margin-top: 10px; font-weight: bold; text-align: center; border: 3px solid #b30000; }
         textarea { width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 12px; box-sizing: border-box; font-size: 16px; }
         .submit-btn { width: 100%; padding: 22px; background: #023e8a; color: white; border: none; border-radius: 60px; font-size: 1.5em; font-weight: bold; margin-top: 30px; }
     </style>
@@ -32,9 +34,11 @@
     </div>
     <div class="section-title">🍷 酒気帯び</div>
     <div class="btn-group">
-        <div class="select-btn active" onclick="sel('has_alcohol','無',this)">無</div>
-        <div class="select-btn" onclick="sel('has_alcohol','有',this)">有</div>
+        <div class="select-btn active" onclick="selAlc('無',this)">無</div>
+        <div class="select-btn" onclick="selAlc('有',this)">有</div>
     </div>
+    <div id="alcohol-alert">🚨 異常検知！アルコールが検出されました。直ちに運行管理者に報告し、指示を仰いでください。</div>
+
     <div class="section-title">👮 確認者</div><div id="checker-buttons" class="btn-group"></div>
     <div class="section-title">📝 備考</div>
     <textarea id="instruction" rows="3" placeholder="備考があれば記入"></textarea>
@@ -43,6 +47,7 @@
 <script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycbxFY0EO8EYskrjylMr3m4xofJ2UVZO6k-U_XihN1-AZFXtWoQ0l0TGuCTGn-gIoCVs_3Q/exec";
     let formData = { check_type:"朝", driver_name:"", car_number:"未定", method:"対面", use_device:"使用", has_alcohol:"無", checker_name:"" };
+    
     window.onload = async () => {
         const res = await fetch(GAS_URL); const d = await res.json();
         const create = (list, gid, key) => {
@@ -55,7 +60,22 @@
         };
         create(d.drivers, 'driver-buttons', 'driver_name'); create(d.cars, 'car-buttons', 'car_number'); create(d.checkers, 'checker-buttons', 'checker_name');
     };
-    function sel(k, v, e) { formData[k] = v; e.parentElement.querySelectorAll('.select-btn').forEach(b => b.classList.remove('active')); e.classList.add('active'); }
+
+    function sel(k, v, e) { 
+        formData[k] = v; 
+        e.parentElement.querySelectorAll('.select-btn').forEach(b => b.classList.remove('active')); 
+        e.classList.add('active'); 
+    }
+
+    // 酒気帯び専用の選択関数（アラート連動）
+    function selAlc(v, e) {
+        formData.has_alcohol = v;
+        e.parentElement.querySelectorAll('.select-btn').forEach(b => b.classList.remove('active'));
+        e.classList.add('active');
+        const alertBox = document.getElementById('alcohol-alert');
+        alertBox.style.display = (v === '有') ? 'block' : 'none';
+    }
+
     async function sub() {
         if (!formData.driver_name) return alert("名前を選んでください");
         const b = document.querySelector('.submit-btn'); b.disabled = true; b.innerText = "送信中...";
