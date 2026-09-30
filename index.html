@@ -42,39 +42,47 @@
 
 <div class="container">
     <h2>🚚 点呼報告</h2>
+    
     <div class="section-title">⏰ 朝・夕</div>
     <div class="btn-group">
-        <div class="select-btn active" onclick="sel('check_type','朝',this)">朝</div>
+        <div class="select-btn" onclick="sel('check_type','朝',this)">朝</div>
         <div class="select-btn" onclick="sel('check_type','夕',this)">夕</div>
     </div>
-    <div class="section-title">👤 名前</div><div id="driver-buttons" class="btn-group"></div>
-    <div class="section-title">🚗 車両（未選択なら未定）</div><div id="car-buttons" class="btn-group" style="grid-template-columns: 1fr;"></div>
+    
+    <div class="section-title">👤 名前</div>
+    <div id="driver-buttons" class="btn-group"></div>
+    
+    <div class="section-title">🚗 車両（未選択なら未定）</div>
+    <div id="car-buttons" class="btn-group" style="grid-template-columns: 1fr;"></div>
+    
     <div class="section-title">📱 検知器</div>
     <div class="btn-group">
-        <div class="select-btn active" onclick="sel('use_device','使用',this)">使用</div>
+        <div class="select-btn" onclick="sel('use_device','使用',this)">使用</div>
         <div class="select-btn" onclick="sel('use_device','未使用',this)">未使用</div>
     </div>
+    
     <div class="section-title">🍷 酒気帯び</div>
     <div class="btn-group">
-        <div class="select-btn active" onclick="selAlc('無',this)">無</div>
-        <div class="select-btn" onclick="selAlc('有',this)">有</div>
+        <div class="select-btn" onclick="selAlc('無',this)">無</div>
+        <div class="select-btn danger" onclick="selAlc('有',this)">有</div>
     </div>
     <div id="alcohol-alert">🚨 異常検知！アルコールが検出されました。直ちに運行管理者に報告し、指示を仰いでください。</div>
 
-    <!-- 今日の指示表示エリア（選択可能なリスト） -->
     <div class="section-title">📢 今日の指示事項</div>
     <div id="instruction-buttons" class="btn-group" style="grid-template-columns: 1fr;"></div>
 
-    <div class="section-title">👮 確認者</div><div id="checker-buttons" class="btn-group"></div>
+    <div class="section-title">👮 確認者</div>
+    <div id="checker-buttons" class="btn-group"></div>
+    
     <div class="section-title">📝 備考</div>
     <textarea id="instruction" rows="3" placeholder="備考があれば記入"></textarea>
+    
     <button class="submit-btn" onclick="sub()">報告を送信！</button>
 </div>
 
 <script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycbxFY0EO8EYskrjylMr3m4xofJ2UVZO6k-U_XihN1-AZFXtWoQ0l0TGuCTGn-gIoCVs_3Q/exec";
     
-    // 指示事項の複数パターン
     const INSTRUCTION_LIST = [
         "【車間距離】本日は天候に注意し、前車との車間距離を十分にとった上で走行してください。",
         "【一時停止】交差点や見通しの悪い場所では『止まれ』でタイヤを確実に停止させてください。",
@@ -83,23 +91,23 @@
         "【体調管理】無理な運転は厳禁です。少しでも眠気や体調不良を感じたら休息を取ってください。"
     ];
 
-    // 日替わりで標準指示を自動セット
     const todayIndex = new Date().getDate() % INSTRUCTION_LIST.length;
     let selectedInstruction = INSTRUCTION_LIST[todayIndex];
 
+    // ★ 全項目を「未選択（空）」で初期化
     let formData = { 
-        check_type:"朝", 
+        check_type:"", 
         driver_name:"", 
-        car_number:"未定", 
+        car_number:"未定", // 車両のみ未選択時は自動で「未定」
         method:"対面", 
-        use_device:"使用", 
-        has_alcohol:"無", 
+        use_device:"", 
+        has_alcohol:"", 
         checker_name:"",
         safety_instruction: selectedInstruction
     };
 
     window.onload = async () => {
-        // 今日の指示ボタンの動的表示
+        // 指示事項ボタンの生成
         const insGroup = document.getElementById('instruction-buttons');
         INSTRUCTION_LIST.forEach((text) => {
             const b = document.createElement('div');
@@ -121,10 +129,12 @@
             const d = await res.json();
             const create = (list, gid, key) => {
                 const g = document.getElementById(gid);
-                list.forEach((v, i) => {
-                    const b = document.createElement('div'); b.className = 'select-btn'; b.innerText = v;
-                    b.onclick = () => sel(key, v, b); g.appendChild(b);
-                    if (key === 'checker_name' && i === 0) { b.classList.add('active'); formData.checker_name = v; }
+                list.forEach((v) => {
+                    const b = document.createElement('div'); 
+                    b.className = 'select-btn'; 
+                    b.innerText = v;
+                    b.onclick = () => sel(key, v, b); 
+                    g.appendChild(b);
                 });
             };
             create(d.drivers, 'driver-buttons', 'driver_name'); 
@@ -150,23 +160,37 @@
         e.classList.add('active'); 
     }
 
-    // ★ 酒気帯びの有無をクリックした直後にポップアップを起動する処理
+    // 酒気帯びタップ時にポップアップ表示
     function selAlc(v, e) {
         formData.has_alcohol = v;
         e.parentElement.querySelectorAll('.select-btn').forEach(b => b.classList.remove('active'));
         e.classList.add('active');
         
-        // 「有」の場合のアラート表示設定
         const alertBox = document.getElementById('alcohol-alert');
         alertBox.style.display = (v === '有') ? 'block' : 'none';
 
-        // 酒気帯びチェック（「無」でも「有」でも）を押した直後に特大ポップアップを表示！
+        // 酒気帯び（無・有）を押した直後に特大ポップアップを起動
         showInstructionModal(selectedInstruction);
     }
 
     async function sub() {
-        if (!formData.driver_name) return alert("名前を選んでください");
-        const b = document.querySelector('.submit-btn'); b.disabled = true; b.innerText = "送信中...";
+        // ★ 未選択項目をチェックして配列にためる
+        let missing = [];
+        if (!formData.check_type) missing.push("・朝・夕");
+        if (!formData.driver_name) missing.push("・名前");
+        if (!formData.use_device) missing.push("・検知器");
+        if (!formData.has_alcohol) missing.push("・酒気帯び（無・有）");
+        if (!formData.checker_name) missing.push("・確認者");
+
+        // 未選択があればアラートを出して送信を止める
+        if (missing.length > 0) {
+            alert("以下の項目を選択してください：\n\n" + missing.join("\n"));
+            return;
+        }
+
+        const b = document.querySelector('.submit-btn'); 
+        b.disabled = true; 
+        b.innerText = "送信中...";
         
         const userRemark = document.getElementById('instruction').value;
         formData.instruction = `【確認指示】${formData.safety_instruction}` + (userRemark ? ` / 【備考】${userRemark}` : '');
