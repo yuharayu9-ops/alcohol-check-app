@@ -61,7 +61,7 @@
     </div>
     <div id="alcohol-alert">🚨 異常検知！アルコールが検出されました。直ちに運行管理者に報告し、指示を仰いでください。</div>
 
-    <!-- 今日の指示表示・変更エリア -->
+    <!-- 今日の指示表示エリア（選択可能なリスト） -->
     <div class="section-title">📢 今日の指示事項</div>
     <div id="instruction-buttons" class="btn-group" style="grid-template-columns: 1fr;"></div>
 
@@ -74,16 +74,16 @@
 <script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycbxFY0EO8EYskrjylMr3m4xofJ2UVZO6k-U_XihN1-AZFXtWoQ0l0TGuCTGn-gIoCVs_3Q/exec";
     
-    // 指示事項の複数パターン（日替わりまたは手動選択用）
+    // 指示事項の複数パターン
     const INSTRUCTION_LIST = [
-        "【車間距離】本日は天候に注意し、前車との車間距離を十分にとって走行してください。",
+        "【車間距離】本日は天候に注意し、前車との車間距離を十分にとった上で走行してください。",
         "【一時停止】交差点や見通しの悪い場所では『止まれ』でタイヤを確実に停止させてください。",
         "【後退注意】駐車場や狭い場所での後退時は、必ず降車して後方目視確認を行ってください。",
         "【ながら運転禁止】走行中のスマホ操作・注視は絶対厳禁です。停車して操作してください。",
         "【体調管理】無理な運転は厳禁です。少しでも眠気や体調不良を感じたら休息を取ってください。"
     ];
 
-    // 日替わりで標準指示を自動セット（または0番目）
+    // 日替わりで標準指示を自動セット
     const todayIndex = new Date().getDate() % INSTRUCTION_LIST.length;
     let selectedInstruction = INSTRUCTION_LIST[todayIndex];
 
@@ -95,13 +95,13 @@
         use_device:"使用", 
         has_alcohol:"無", 
         checker_name:"",
-        safety_instruction: selectedInstruction // 安全指示をデータに追加
+        safety_instruction: selectedInstruction
     };
 
     window.onload = async () => {
-        // 今日の指示の選択ボタンを動的生成
+        // 今日の指示ボタンの動的表示
         const insGroup = document.getElementById('instruction-buttons');
-        INSTRUCTION_LIST.forEach((text, i) => {
+        INSTRUCTION_LIST.forEach((text) => {
             const b = document.createElement('div');
             b.className = 'select-btn' + (text === selectedInstruction ? ' active' : '');
             b.style.fontSize = '0.9em';
@@ -112,13 +112,9 @@
                 formData.safety_instruction = text;
                 insGroup.querySelectorAll('.select-btn').forEach(btn => btn.classList.remove('active'));
                 b.classList.add('active');
-                showInstructionModal(text); // 選択し直した際もポップアップで再確認
             };
             insGroup.appendChild(b);
         });
-
-        // ポップアップを表示
-        showInstructionModal(selectedInstruction);
 
         try {
             const res = await fetch(GAS_URL); 
@@ -154,19 +150,24 @@
         e.classList.add('active'); 
     }
 
+    // ★ 酒気帯びの有無をクリックした直後にポップアップを起動する処理
     function selAlc(v, e) {
         formData.has_alcohol = v;
         e.parentElement.querySelectorAll('.select-btn').forEach(b => b.classList.remove('active'));
         e.classList.add('active');
+        
+        // 「有」の場合のアラート表示設定
         const alertBox = document.getElementById('alcohol-alert');
         alertBox.style.display = (v === '有') ? 'block' : 'none';
+
+        // 酒気帯びチェック（「無」でも「有」でも）を押した直後に特大ポップアップを表示！
+        showInstructionModal(selectedInstruction);
     }
 
     async function sub() {
         if (!formData.driver_name) return alert("名前を選んでください");
         const b = document.querySelector('.submit-btn'); b.disabled = true; b.innerText = "送信中...";
         
-        // 備考と安全指示を組み合わせて備考欄/指示欄に記録
         const userRemark = document.getElementById('instruction').value;
         formData.instruction = `【確認指示】${formData.safety_instruction}` + (userRemark ? ` / 【備考】${userRemark}` : '');
 
