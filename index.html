@@ -11,13 +11,35 @@
         .btn-group { display: grid; gap: 8px; margin-bottom: 10px; grid-template-columns: 1fr 1fr; }
         .select-btn { padding: 18px 10px; border: 3px solid #e0e0e0; border-radius: 15px; background: #fff; cursor: pointer; font-size: 1.1em; font-weight: bold; text-align: center; color: #444; }
         .select-btn.active { background: #0077b6; color: white; border-color: #023e8a; }
-        /* 警告文のデザイン */
         #alcohol-alert { display: none; background-color: #ff0000; color: white; padding: 15px; border-radius: 12px; margin-top: 10px; font-weight: bold; text-align: center; border: 3px solid #b30000; }
         textarea { width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 12px; box-sizing: border-box; font-size: 16px; }
         .submit-btn { width: 100%; padding: 22px; background: #023e8a; color: white; border: none; border-radius: 60px; font-size: 1.5em; font-weight: bold; margin-top: 30px; }
+
+        /* 特大指示ポップアップ（モーダル）のスタイル */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center; padding: 15px; box-sizing: border-box;
+        }
+        .modal-box {
+            background: #fff; width: 100%; max-width: 500px; border-radius: 20px; padding: 25px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.3); text-align: center; border: 4px solid #0077b6;
+        }
+        .modal-title { font-size: 1.5em; font-weight: bold; color: #d90429; margin-bottom: 15px; }
+        .modal-body { font-size: 1.2em; font-weight: bold; color: #2b2d42; line-height: 1.6; background: #f8f9fa; padding: 15px; border-radius: 12px; border: 2px dashed #0077b6; margin-bottom: 20px; }
+        .modal-btn { width: 100%; padding: 18px; background: #38b000; color: white; border: none; border-radius: 40px; font-size: 1.3em; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
+
+<!-- 安全指示 特大ポップアップ -->
+<div id="instruction-modal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-title">📢 本日の安全運転指示</div>
+        <div id="modal-instruction-text" class="modal-body">読み込み中...</div>
+        <button class="modal-btn" onclick="closeInstructionModal()">指示を確認しました</button>
+    </div>
+</div>
+
 <div class="container">
     <h2>🚚 点呼報告</h2>
     <div class="section-title">⏰ 朝・夕</div>
@@ -39,27 +61,92 @@
     </div>
     <div id="alcohol-alert">🚨 異常検知！アルコールが検出されました。直ちに運行管理者に報告し、指示を仰いでください。</div>
 
+    <!-- 今日の指示表示・変更エリア -->
+    <div class="section-title">📢 今日の指示事項</div>
+    <div id="instruction-buttons" class="btn-group" style="grid-template-columns: 1fr;"></div>
+
     <div class="section-title">👮 確認者</div><div id="checker-buttons" class="btn-group"></div>
     <div class="section-title">📝 備考</div>
     <textarea id="instruction" rows="3" placeholder="備考があれば記入"></textarea>
     <button class="submit-btn" onclick="sub()">報告を送信！</button>
 </div>
+
 <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbxUiEfp_FRoH98--XLr7-bnuo5gGIQEA7am1SknZOSINJGzaKa4V3E6dXiqWl3o7vbq/exec";
-    let formData = { check_type:"朝", driver_name:"", car_number:"未定", method:"対面", use_device:"使用", has_alcohol:"無", checker_name:"" };
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbxFY0EO8EYskrjylMr3m4xofJ2UVZO6k-U_XihN1-AZFXtWoQ0l0TGuCTGn-gIoCVs_3Q/exec";
     
-    window.onload = async () => {
-        const res = await fetch(GAS_URL); const d = await res.json();
-        const create = (list, gid, key) => {
-            const g = document.getElementById(gid);
-            list.forEach((v, i) => {
-                const b = document.createElement('div'); b.className = 'select-btn'; b.innerText = v;
-                b.onclick = () => sel(key, v, b); g.appendChild(b);
-                if (key === 'checker_name' && i === 0) { b.classList.add('active'); formData.checker_name = v; }
-            });
-        };
-        create(d.drivers, 'driver-buttons', 'driver_name'); create(d.cars, 'car-buttons', 'car_number'); create(d.checkers, 'checker-buttons', 'checker_name');
+    // 指示事項の複数パターン（日替わりまたは手動選択用）
+    const INSTRUCTION_LIST = [
+        "【車間距離】本日は天候に注意し、前車との車間距離を十分にとって走行してください。",
+        "【一時停止】交差点や見通しの悪い場所では『止まれ』でタイヤを確実に停止させてください。",
+        "【後退注意】駐車場や狭い場所での後退時は、必ず降車して後方目視確認を行ってください。",
+        "【ながら運転禁止】走行中のスマホ操作・注視は絶対厳禁です。停車して操作してください。",
+        "【体調管理】無理な運転は厳禁です。少しでも眠気や体調不良を感じたら休息を取ってください。"
+    ];
+
+    // 日替わりで標準指示を自動セット（または0番目）
+    const todayIndex = new Date().getDate() % INSTRUCTION_LIST.length;
+    let selectedInstruction = INSTRUCTION_LIST[todayIndex];
+
+    let formData = { 
+        check_type:"朝", 
+        driver_name:"", 
+        car_number:"未定", 
+        method:"対面", 
+        use_device:"使用", 
+        has_alcohol:"無", 
+        checker_name:"",
+        safety_instruction: selectedInstruction // 安全指示をデータに追加
     };
+
+    window.onload = async () => {
+        // 今日の指示の選択ボタンを動的生成
+        const insGroup = document.getElementById('instruction-buttons');
+        INSTRUCTION_LIST.forEach((text, i) => {
+            const b = document.createElement('div');
+            b.className = 'select-btn' + (text === selectedInstruction ? ' active' : '');
+            b.style.fontSize = '0.9em';
+            b.style.textAlign = 'left';
+            b.innerText = text;
+            b.onclick = () => {
+                selectedInstruction = text;
+                formData.safety_instruction = text;
+                insGroup.querySelectorAll('.select-btn').forEach(btn => btn.classList.remove('active'));
+                b.classList.add('active');
+                showInstructionModal(text); // 選択し直した際もポップアップで再確認
+            };
+            insGroup.appendChild(b);
+        });
+
+        // ポップアップを表示
+        showInstructionModal(selectedInstruction);
+
+        try {
+            const res = await fetch(GAS_URL); 
+            const d = await res.json();
+            const create = (list, gid, key) => {
+                const g = document.getElementById(gid);
+                list.forEach((v, i) => {
+                    const b = document.createElement('div'); b.className = 'select-btn'; b.innerText = v;
+                    b.onclick = () => sel(key, v, b); g.appendChild(b);
+                    if (key === 'checker_name' && i === 0) { b.classList.add('active'); formData.checker_name = v; }
+                });
+            };
+            create(d.drivers, 'driver-buttons', 'driver_name'); 
+            create(d.cars, 'car-buttons', 'car_number'); 
+            create(d.checkers, 'checker-buttons', 'checker_name');
+        } catch(e) {
+            console.error("データの読み込みに失敗しました", e);
+        }
+    };
+
+    function showInstructionModal(text) {
+        document.getElementById('modal-instruction-text').innerText = text;
+        document.getElementById('instruction-modal').style.display = 'flex';
+    }
+
+    function closeInstructionModal() {
+        document.getElementById('instruction-modal').style.display = 'none';
+    }
 
     function sel(k, v, e) { 
         formData[k] = v; 
@@ -67,7 +154,6 @@
         e.classList.add('active'); 
     }
 
-    // 酒気帯び専用の選択関数（アラート連動）
     function selAlc(v, e) {
         formData.has_alcohol = v;
         e.parentElement.querySelectorAll('.select-btn').forEach(b => b.classList.remove('active'));
@@ -79,9 +165,14 @@
     async function sub() {
         if (!formData.driver_name) return alert("名前を選んでください");
         const b = document.querySelector('.submit-btn'); b.disabled = true; b.innerText = "送信中...";
-        formData.instruction = document.getElementById('instruction').value;
+        
+        // 備考と安全指示を組み合わせて備考欄/指示欄に記録
+        const userRemark = document.getElementById('instruction').value;
+        formData.instruction = `【確認指示】${formData.safety_instruction}` + (userRemark ? ` / 【備考】${userRemark}` : '');
+
         await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(formData) });
-        alert("送信完了！"); location.reload();
+        alert("送信完了！指示事項を確認して送信しました。"); 
+        location.reload();
     }
 </script>
 </body>
